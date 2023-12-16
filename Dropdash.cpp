@@ -8,6 +8,7 @@ extern "C"
 	FunctionHook<void, EntityData1*, EntityData2*, CharObj2*> Sonic_Act1_h(Sonic_Act1);
 	FunctionHook<Bool, EntityData1*, CharObj2*> Sonic_JumpCancel_h(Sonic_JumpCancel_p);
 	int dropdashTimer = 0;
+	bool canChargeDropDash = false;
 
 	std::string dropdashButton;
 
@@ -19,15 +20,22 @@ extern "C"
 			if (dropdashButton == "Spindash (B and X)") buttons = AttackButtons;
 			else if (dropdashButton == "Whistle (Y)")   buttons = WhistleButtons;
 
-			if (buttons & HeldButtons[ed1->CharIndex])
+			if (canChargeDropDash == false && (buttons & PressedButtons[ed1->CharIndex]))
+				canChargeDropDash = true;
+
+			if (canChargeDropDash && (buttons & HeldButtons[ed1->CharIndex]))
 				dropdashTimer++;
-			else
+			else if (canChargeDropDash)
 				dropdashTimer = 0;
 
 			if (dropdashTimer > 15)
 				QueueSound_DualEntity(767, ed1, 1, 0, 2);
 		}
-		else if (ed1->Action != 2) /*!Walk*/ dropdashTimer = 0;
+		else if (ed1->Action != 2) //!Walk
+		{
+			canChargeDropDash = false;
+			dropdashTimer = 0;
+		}
 
 		Sonic_Act1_h.Original(ed1, ed2, co2);
 
