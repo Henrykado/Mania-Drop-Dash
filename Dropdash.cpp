@@ -12,10 +12,12 @@ int dropdashTimer = 0;
 bool canChargeDropDash = false;
 
 std::string dropdashButton;
+bool fallDash;
+bool isBuffed;
 
 void Sonic_Act1_r(EntityData1* ed1, EntityData2* ed2, CharObj2* co2)
 {
-	if (ed1->Action == 8) // Jump
+	if (ed1->Action == 8 || (fallDash && ed1->Action == 12)) // Jump or (Fall if fallDash is true)
 	{
 		Buttons buttons;
 		if (dropdashButton == "B and X (Spindash)") buttons = AttackButtons;
@@ -33,6 +35,11 @@ void Sonic_Act1_r(EntityData1* ed1, EntityData2* ed2, CharObj2* co2)
 			dropdashTimer = 0;
 		}
 
+		if (dropdashTimer == 15 && fallDash && ed1->Action == 12) {
+			ed1->Status |= Status_Ball;
+			co2->AnimationThing.Index = 14;
+		}
+
 		if (dropdashTimer >= 15)
 			QueueSound_DualEntity(767, ed1, 1, 0, 2);
 	}
@@ -47,7 +54,10 @@ void Sonic_Act1_r(EntityData1* ed1, EntityData2* ed2, CharObj2* co2)
 	if (dropdashTimer > 15 && (ed1->Action == 2 || ed1->Action == 1)) // Walk or Idle
 	{
 		ed1->Status |= (Status_Attack | Status_Ball);
-		dropdashSpeed = 5.0 + min(dropdashTimer / 15, 5.0);
+		if (!isBuffed)
+			dropdashSpeed = 5.0 + min(dropdashTimer / 15, 5.0);
+		else
+			dropdashSpeed = 7.5 + min(dropdashTimer / 30, 2.5);
 
 		ed1->Action = 5; // Roll
 		co2->AnimationThing.Index = 15;
@@ -72,6 +82,8 @@ extern "C"
 	{
 		const IniFile* config = new IniFile(std::string(path) + "\\config.ini");
 		dropdashButton = config->getString("", "dropdashButton", "B and X (Spindash)");
+		fallDash = config->getBool("", "fallDash", false);
+		isBuffed = config->getBool("", "isBuffed", false);
 		delete config;
 
 		Sonic_Act1_h.Hook(Sonic_Act1_r);
