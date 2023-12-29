@@ -6,6 +6,8 @@
 
 FunctionHook<void, EntityData1*, EntityData2*, CharObj2*> Sonic_Act1_h(Sonic_Act1);
 UsercallFunc(Bool, Sonic_JumpCancel_h, (EntityData1* a1, CharObj2* a2), (a1, a2), 0x492F50, rEAX, rESI, rEDI);
+
+float dropdashSpeed = 0.0f;
 int dropdashTimer = 0;
 bool canChargeDropDash = false;
 
@@ -26,13 +28,15 @@ void Sonic_Act1_r(EntityData1* ed1, EntityData2* ed2, CharObj2* co2)
 
 		if (canChargeDropDash && (buttons & HeldButtons[ed1->CharIndex]))
 			dropdashTimer++;
-		else if (canChargeDropDash)
+		else {
+			canChargeDropDash = false;
 			dropdashTimer = 0;
+		}
 
-		if (dropdashTimer > 15)
+		if (dropdashTimer >= 15)
 			QueueSound_DualEntity(767, ed1, 1, 0, 2);
 	}
-	else if (ed1->Action != 2) //!Walk
+	else
 	{
 		canChargeDropDash = false;
 		dropdashTimer = 0;
@@ -40,15 +44,14 @@ void Sonic_Act1_r(EntityData1* ed1, EntityData2* ed2, CharObj2* co2)
 
 	Sonic_Act1_h.Original(ed1, ed2, co2);
 
-	if (dropdashTimer > 15 && ed1->Action == 2) // Walk
+	if (dropdashTimer > 15 && (ed1->Action == 2 || ed1->Action == 1)) // Walk or Idle
 	{
 		ed1->Status |= (Status_Attack | Status_Ball);
-		co2->SpindashSpeed = 5.0 + min(dropdashTimer / 15, 5.0);
+		dropdashSpeed = 5.0 + min(dropdashTimer / 15, 5.0);
 
 		ed1->Action = 5; // Roll
 		co2->AnimationThing.Index = 15;
-		co2->Speed.x = co2->SpindashSpeed;
-		co2->SpindashSpeed = 0.0;
+		co2->Speed.x = dropdashSpeed;
 		dropdashTimer = 0;
 		PlaySound(768, 0, 0, 0);
 	}
